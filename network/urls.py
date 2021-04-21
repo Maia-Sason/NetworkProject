@@ -1,7 +1,7 @@
 
 from django.urls import path
 
-from .views import CheckAuthenticatedView, login_view, logout_view, register, GetCSRFToken, GetLatestPosts
+from .views import CheckAuthenticatedView, login_view, logout_view, register, GetCSRFToken, GetLatestPosts, ComposePost
 
 urlpatterns = [
     path('authenticated', CheckAuthenticatedView.as_view()),
@@ -9,6 +9,8 @@ urlpatterns = [
     path('login', login_view.as_view()),
     path('logout', logout_view.as_view()),
     path('csrf_cookie', GetCSRFToken.as_view()),
+    path('create', ComposePost.as_view()),
+    path('create/<int:id>', ComposePost.as_view()),
     path('posts', GetLatestPosts.as_view()),
     path('posts/<int:id>', GetLatestPosts.as_view())
 ]

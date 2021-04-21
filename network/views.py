@@ -1,8 +1,11 @@
+import json
+
 from django.contrib.auth import authenticate, login, logout
 from django.db import IntegrityError
-from django.http import HttpResponse, HttpResponseRedirect
+from django.core import serializers
+from django.http import HttpResponse, HttpResponseRedirect, JsonResponse
 from django.shortcuts import render
-from django.urls import reverse 
+from django.urls import reverse
 
 from rest_framework import permissions
 from rest_framework.views import APIView
@@ -11,8 +14,7 @@ from rest_framework.response import Response
 from django.views.decorators.csrf import ensure_csrf_cookie, csrf_protect
 from django.utils.decorators import method_decorator
 
-from .models import User
-
+from .models import User, Posts, Follow, Notifications
 
 @method_decorator(csrf_protect, name='dispatch')
 class CheckAuthenticatedView(APIView):
@@ -93,6 +95,43 @@ class register(APIView):
         login(request, user)
 
 
+class ComposePost(APIView):
+    """ Post a new post """
+    def post(self, request, format=None):
+        
+            
+        try:
+            data = self.request.data
+            content = data["content"]
+            try:
+                post = Posts(creator=request.user, content=content)
+                post.save()
+                return Response({"success": "posted!"})
+            except:
+                return Response({"error": "Error occured trying to save post!"})
+        except: 
+            return Response({"error": "error with key, requested 'content'"})
+        
+    def put(self, request, format=None, *args, **kwargs):
+        data = self.request.data
+        data_id = self.kwargs.get('id')
+        data_content = data["content"]
+        
+        try:
+            post = Posts.objects.filter(creator=request.user, id=data_id)
+            print(post)
+            if not post:
+                return Response({"error": "Error, tried editing a post that doesn't belong to you."})
+            else:
+                try:
+                    post.update(content=data_content)
+                    return Response({"success": "post updated!"})
+                except:
+                    return Response({"error": "Something went wrong saving your update."})
+        except:
+            return Response({"error": "Something went wrong editing your post."})
+
+
 class GetLatestPosts(APIView):
     """ Latest posts of all with django pagination or get latest posts of user with user id"""
     #  https://docs.djangoproject.com/en/3.0/topics/pagination/
@@ -105,13 +144,20 @@ class GetLatestPosts(APIView):
         url_var = self.kwargs.get('id')
 
         # If ID is None: query all latest posts
-        if url_var == None:
-            print('do nothing')
+        if url_var is None:
+            # Query all posts
+            posts = Posts.objects.all()
+            # order posts by timestamp
+            posts = posts.order_by("-timestamp").all()
+            data = [post.serialize() for post in Posts.objects.all()]
+
+            # Return list of object posts
+            return JsonResponse(data, content_type='application/json; charset=UTF-8', safe=False)
+           
         # Else, query posts from user id only.
         else:
             print(url_var)
         return Response({ 'success': 'looking at posts' })
-
 
 class GetFollowingPosts():
     """ Latest posts logged in user follows"""

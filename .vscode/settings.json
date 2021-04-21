@@ -1,0 +1,12 @@
+{
+    "python.pythonPath": "network_env/bin/python",
+    "python.linting.pylintEnabled": true,
+    "python.linting.flake8Enabled": false,
+    "python.linting.enabled": true,
+    "python.linting.pylintArgs": [
+        "--disable=C0111",
+        "--load-plugins",
+        "pylint_django",
+        "--disable=django-not-configured"
+    ]
+}
