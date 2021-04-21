@@ -9,14 +9,25 @@ class Posts(models.Model):
     creator = models.ForeignKey("User", on_delete=models.CASCADE, related_name="posts")
     content = models.TextField(blank=False)
     timestamp = models.DateTimeField(auto_now_add=True)
-    likes = models.PositiveIntegerField(default=0)
 
     def serialize(self):
         return {
             "id": self.id,
             "creator": self.creator.username,
             "content": self.content,
-            "timestamp": self.timestamp.strftime("posted on %b %d/%y @ %I %p")
+            "timestamp": self.timestamp.strftime("posted on %b %d/%y @ %I %p"),
+            "likes" : self.likes.count()
+        }
+
+class Likes(models.Model):
+    liker = models.ForeignKey("User", on_delete=models.CASCADE, related_name="liking")
+    post = models.ForeignKey("Posts", on_delete=models.CASCADE, related_name="likes")
+
+    def serialize(self):
+        return {
+            "id" : self.id,
+            "post" : self.post,
+            "liker" : self.liker
         }
 
 class Follow(models.Model):

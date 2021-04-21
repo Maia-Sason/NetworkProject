@@ -3,6 +3,7 @@ import json
 from django.contrib.auth import authenticate, login, logout
 from django.db import IntegrityError
 from django.core import serializers
+from django.core.paginator import Paginator
 from django.http import HttpResponse, HttpResponseRedirect, JsonResponse
 from django.shortcuts import render
 from django.urls import reverse
@@ -14,7 +15,8 @@ from rest_framework.response import Response
 from django.views.decorators.csrf import ensure_csrf_cookie, csrf_protect
 from django.utils.decorators import method_decorator
 
-from .models import User, Posts, Follow, Notifications
+from .models import User, Posts, Follow, Notifications, Likes
+from .util import PaginationPosts
 
 @method_decorator(csrf_protect, name='dispatch')
 class CheckAuthenticatedView(APIView):
@@ -58,7 +60,7 @@ class logout_view(APIView):
     def post(self, request, format=None):
         try:
             logout(request)
-            return Response({"success": "user successfully logged out."})
+            return Response({"success": "User successfully logged out."})
         except:
             return Response({"error": "Something went wrong when trying to log out."})
 
@@ -106,11 +108,11 @@ class ComposePost(APIView):
             try:
                 post = Posts(creator=request.user, content=content)
                 post.save()
-                return Response({"success": "posted!"})
+                return Response({"success": "Posted!"})
             except:
                 return Response({"error": "Error occured trying to save post!"})
         except: 
-            return Response({"error": "error with key, requested 'content'"})
+            return Response({"error": "Error with key, requested 'content'"})
         
     def put(self, request, format=None, *args, **kwargs):
         data = self.request.data
@@ -125,15 +127,57 @@ class ComposePost(APIView):
             else:
                 try:
                     post.update(content=data_content)
-                    return Response({"success": "post updated!"})
+                    return Response({"success": "Post updated!"})
                 except:
                     return Response({"error": "Something went wrong saving your update."})
         except:
             return Response({"error": "Something went wrong editing your post."})
 
+    def delete(self, request, format=None, *args, **kwargs):
+        data = self.request.data
+        data_id = self.kwargs.get('id')
+
+        try:
+            post = Posts.objects.filter(creator=request.user, id=data_id)
+            print(post)
+            if not post:
+                return Response({"error": "Error, tried deleting a post that doesn't belong to you."})
+            else:
+                try:
+                    post.delete()
+                    return Response({"success": "Post deleted!"})
+                except:
+                    return Response({"error": "Something went wrong saving your delete."})
+        except:
+            return Response({"error": "Something went wrong deleting your post."})
+
+
+class Like(APIView):
+    """ Like/unlike posts with ID """
+    def put(self, request, format=None, *args, **kwargs):
+        data_id = self.kwargs.get('id')
+
+        post = Posts.objects.filter(id=data_id).first()
+
+        like_entry = Likes.objects.filter(liker=request.user, post=post)
+
+        try:
+            if not like_entry:
+                # Create a new entry to like a post
+                liked = Likes(liker=request.user, post=post)
+                liked.save()
+                return Response({"success": "Post liked!"})
+            else:
+                # Delete the post.
+                like_entry.delete()
+                return Response({"success": "Post unliked!"})
+        except:
+            return Response({"error": "Error occured performing like operation."})
+        
+            
 
 class GetLatestPosts(APIView):
-    """ Latest posts of all with django pagination or get latest posts of user with user id"""
+    """ Latest posts of all or get latest post of all by page number in Django pagination"""
     #  https://docs.djangoproject.com/en/3.0/topics/pagination/
     
     # No need for authenticated user with this route.
@@ -141,22 +185,32 @@ class GetLatestPosts(APIView):
 
     # Optional variable id.
     def get(self, request, format=None, *args, **kwargs):
-        url_var = self.kwargs.get('id')
+        data_id = self.kwargs.get('id')
+
+        # Query all posts
+        posts = Posts.objects.all()
+        # order posts by timestamp
+        posts = posts.order_by("-timestamp").all()
+        data = [post.serialize() for post in Posts.objects.all()]
 
         # If ID is None: query all latest posts
-        if url_var is None:
-            # Query all posts
-            posts = Posts.objects.all()
-            # order posts by timestamp
-            posts = posts.order_by("-timestamp").all()
-            data = [post.serialize() for post in Posts.objects.all()]
+        if data_id is None:
+            
+            json_data = {}
+            json_data = PaginationPosts(data, data_id)
 
             # Return list of object posts
-            return JsonResponse(data, content_type='application/json; charset=UTF-8', safe=False)
+            return JsonResponse(json_data, content_type='application/json; charset=UTF-8', safe=False)
            
         # Else, query posts from user id only.
         else:
-            print(url_var)
+            print(data_id)
+
+            json_data = {}
+            json_data = PaginationPosts(data, data_id)
+
+            return JsonResponse(json_data, content_type='application/json; charset=UTF-8', safe=False)
+
         return Response({ 'success': 'looking at posts' })
 
 class GetFollowingPosts():
@@ -166,8 +220,8 @@ class GetFollowingPosts():
     def get(self, request, format=None):
         """ filter by user == user follow."""
 
-class GetAuthUserPosts():
-    """ Latest posts of logged in user with django pagination"""
+class GetUserPosts():
+    """ Latest posts of user with django pagination"""
     #  https://docs.djangoproject.com/en/3.0/topics/pagination/
 
 
