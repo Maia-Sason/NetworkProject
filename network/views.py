@@ -70,38 +70,69 @@ class register(APIView):
     permission_classes = (permissions.AllowAny, )
     def post(self, request, format=None):
         data = self.request.data
-    
-        username = data["username"]
-        email = data["email"]
-
-        # Ensure password matches confirmation
-        password = data["password"]
-        confirmation = data["confirmation"]
-
-        if password != confirmation:
-            return Response({
-                "error": "Passwords must match."
-            })
-
-        # Attempt to create new user
         try:
-            user = User.objects.create_user(username, email, password)
-            user.save()
+            username = data["username"]
+            email = data["email"]
+
+            
+            password = data["password"]
+            confirmation = data["confirmation"]
+        except:
+            {"error": "You are missing keys such as 'email', 'username', 'password' or 'confirmation'."}
+        
+        try:
+            # Ensure password matches confirmation
+            if password != confirmation:
+                return Response({
+                    "error": "Passwords must match."
+                })
+
+            # Attempt to create new user
+            try:
+                user = User.objects.create_user(username, email, password)
+                user.save()
+                return Response({
+                    "success": "User registered."
+                })
+            except IntegrityError:
+                return Response({
+                    "error": "Username already taken."
+                })
+            login(request, user)
+        except:
             return Response({
-                "success": "User registered."
+                "error": "Missing information."
             })
-        except IntegrityError:
+
+
+class RetrieveNotifications(APIView):
+    """Retrieve notifications"""
+    def get(self, request, format=None):
+        notifications = Notifications.objects.filter(targetUser=request.user)
+        notifications = notifications.order_by("-timestamp").all()
+        data = [notification.serialize() for notification in notifications]
+
+        return JsonResponse(data, content_type='application/json; charset=UTF-8', safe=False)
+
+    def put(self, request, format=None, *args, **kwargs):
+        id = self.kwargs.get('id')
+        try:
+            notification = Notifications.objects.filter(targetUser=request.user, id=id)
+
+            notification.update(read=True)
+        except:
             return Response({
-                "error": "Username already taken."
+                "error": "Could not update notification, are you sure it's yours?"
             })
-        login(request, user)
+    
+    def post(self, request, format=None, *args, **kwargs):
+        pass
 
 
 class ComposePost(APIView):
     """ Post a new post """
     def post(self, request, format=None):
         
-            
         try:
             data = self.request.data
             content = data["content"]
@@ -191,39 +222,101 @@ class GetLatestPosts(APIView):
         posts = Posts.objects.all()
         # order posts by timestamp
         posts = posts.order_by("-timestamp").all()
-        data = [post.serialize() for post in Posts.objects.all()]
+        data = [post.serialize() for post in posts]
 
-        # If ID is None: query all latest posts
-        if data_id is None:
-            
-            json_data = {}
-            json_data = PaginationPosts(data, data_id)
+        json_data = {}
+        json_data = PaginationPosts(data, data_id)
 
-            # Return list of object posts
-            return JsonResponse(json_data, content_type='application/json; charset=UTF-8', safe=False)
-           
-        # Else, query posts from user id only.
-        else:
-            print(data_id)
+        return JsonResponse(json_data, content_type='application/json; charset=UTF-8', safe=False)
 
-            json_data = {}
-            json_data = PaginationPosts(data, data_id)
 
-            return JsonResponse(json_data, content_type='application/json; charset=UTF-8', safe=False)
-
-        return Response({ 'success': 'looking at posts' })
-
-class GetFollowingPosts():
+class GetFollowingPosts(APIView):
     """ Latest posts logged in user follows"""
     #  https://docs.djangoproject.com/en/3.0/topics/pagination/
 
-    def get(self, request, format=None):
+    def get(self, request, format=None, *args, **kwargs):
         """ filter by user == user follow."""
+        page_id = self.kwargs.get('page')
+        
+        following = Follow.objects.filter(followerUser=request.user).all()
+        
+        users_following = []
+        try:
+            for user_following in following:
+                user = User.objects.get(id=user_following.id)
+                users_following.append(user)
 
-class GetUserPosts():
-    """ Latest posts of user with django pagination"""
-    #  https://docs.djangoproject.com/en/3.0/topics/pagination/
+            posts = Posts.objects.filter(creator__in=users_following)
+            posts = posts.order_by("-timestamp")
 
+            data = [post.serialize() for post in posts]
+
+            json_data = {}
+            json_data = PaginationPosts(data, page_id)
+
+            return JsonResponse(json_data, content_type='application/json; charset=UTF-8', safe=False)
+        except:
+            return Response({
+                "error": "Error retrieving following information."
+            })
+
+
+
+class FollowUser(APIView):
+    """ Follow/unfollow users """
+    def put(self, request, format=None, *args, **kwargs):
+        data_id = self.kwargs.get('id')
+
+        target = User.objects.filter(id=data_id).first()
+
+        if target == request.user:
+            return Response({"error": "tried following yourself."})
+
+        following = Follow.objects.filter(followerUser=request.user, targetUser=target)
+
+        try:
+            if not following:
+                # Create a new entry to like a post
+                following = Follow(followerUser=request.user, targetUser=target)
+                following.save()
+                return Response({"success": "User followed!"})
+            else:
+                # Delete the post.
+                following.delete()
+                return Response({"success": "User unfollowed!"})
+        except:
+            return Response({"error": "Error occured performing like operation."})
+
+
+class GetUserProfile(APIView):
+    """Get all info of user including posts, followers, following, username"""
+
+    # No need for authenticated user with this route.
+    permission_classes = (permissions.AllowAny, )
+
+    def get(self, request, format=None, *args, **kwargs):
+        data_id = self.kwargs.get('id')
+        page_id = self.kwargs.get('page')
+        try:
+            profile = User.objects.filter(id=data_id).first()
+            profile_json = {}
+            profile_json = profile.serialize()
+        except:
+            return Response({ "error": "Something went wrong retrieving profile data."})
+        
+        try:
+            posts = Posts.objects.filter(creator=profile).all()
+            posts = posts.order_by("-timestamp").all()
+            data = [post.serialize() for post in posts]
+
+            json_data = {}
+            json_data = PaginationPosts(data, page_id)
+
+            profile_json["user_posts"] = json_data
+        
+            return JsonResponse(profile_json, content_type='application/json; charset=UTF-8', safe=False)
+        except:
+            return Response({"Error": "Something went wrong retrieving post data for profile."})
 
 
 @method_decorator(ensure_csrf_cookie, name="dispatch")

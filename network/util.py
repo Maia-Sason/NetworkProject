@@ -28,3 +28,12 @@ def PaginationPosts(data, data_id=None):
     }
 
     return json_page_data
+
+def PushToFollower(data, content):
+    """Push these notifications to followers"""
+    # Use cases: if userA and userB follow userC, and userC posted
+    # send notifications to userA and userB.
+    
+def PushToUser(data, content):
+    """Push these notifications to targetUser/creator"""
+    # Use cases: if userA follows userB, notify userB

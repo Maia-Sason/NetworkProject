@@ -3,7 +3,13 @@ from django.db import models
 
 
 class User(AbstractUser):
-    pass
+    def serialize(self):
+        return {
+            "id": self.id,
+            "username": self.username,
+            "followers": self.followers.count(),
+            "following": self.following.count(),
+        }
 
 class Posts(models.Model):
     creator = models.ForeignKey("User", on_delete=models.CASCADE, related_name="posts")
@@ -49,6 +55,7 @@ class Notifications(models.Model):
 
     def serialize(self):
         return {
+            "id": self.id,
             "target": self.targetUser,
             "content": self.content,
             "read": self.read
