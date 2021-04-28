@@ -108,11 +108,14 @@ class register(APIView):
 class RetrieveNotifications(APIView):
     """Retrieve notifications"""
     def get(self, request, format=None):
-        notifications = Notifications.objects.filter(targetUser=request.user)
-        notifications = notifications.order_by("-timestamp").all()
-        data = [notification.serialize() for notification in notifications]
+        try:
+            notifications = Notifications.objects.filter(targetUser=request.user)
+            notifications = notifications.order_by("-timestamp").all()
+            data = [notification.serialize() for notification in notifications]
 
-        return JsonResponse(data, content_type='application/json; charset=UTF-8', safe=False)
+            return JsonResponse(data, content_type='application/json; charset=UTF-8', safe=False)
+        except: 
+            return Response({"error": "Error retrieving notifications for user."})
 
     def put(self, request, format=None, *args, **kwargs):
         id = self.kwargs.get('id')

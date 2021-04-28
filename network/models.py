@@ -33,7 +33,7 @@ class Likes(models.Model):
         return {
             "id" : self.id,
             "post" : self.post,
-            "liker" : self.liker
+            "liker" : self.liker 
         }
 
 class Follow(models.Model):
