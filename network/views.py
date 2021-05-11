@@ -7,6 +7,7 @@ from django.core.paginator import Paginator
 from django.http import HttpResponse, HttpResponseRedirect, JsonResponse
 from django.shortcuts import render
 from django.urls import reverse
+from django.views.decorators.csrf import csrf_exempt, ensure_csrf_cookie
 
 from rest_framework import permissions
 from rest_framework.views import APIView
@@ -64,8 +65,8 @@ class logout_view(APIView):
         except:
             return Response({"error": "Something went wrong when trying to log out."})
 
-
-@method_decorator(csrf_protect, name='dispatch')
+# @method_decorator(csrf_protect, name="dispatch")
+@method_decorator(csrf_protect, name="dispatch")
 class register(APIView):
     permission_classes = (permissions.AllowAny, )
     def post(self, request, format=None):
@@ -83,6 +84,9 @@ class register(APIView):
         try:
             # Ensure password matches confirmation
             if password != confirmation:
+                print(f"{password} + {confirmation}")
+                print(email)
+                print(data)
                 return Response({
                     "error": "Passwords must match."
                 })
