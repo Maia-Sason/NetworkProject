@@ -47,13 +47,33 @@ class login_view(APIView):
             # Check if authentication successful
             if user is not None:
                 login(request, user)
-                return Response({ 'success': 'User logged in', 'username': username})
+                return Response({ 'success': 'User logged in'})
             else:
                 return Response({
                     "error": "Invalid username and/or password."
                 })
         except:
             Response({'error': 'Problem occured while logging in.'})
+
+
+class GetSessionUser(APIView):
+    permission_classes = (permissions.AllowAny, )
+
+    def get(self, request, format=None):
+        try:
+            user = self.request.user
+
+            userObject = {
+                'id': user.id,
+                'username': user.username,
+                'email' : user.email
+            }
+
+            return JsonResponse(userObject, content_type='application/json; charset=UTF-8', safe=False)
+        except:
+            return Response({"error": "Error retrieving current user info."})
+        
+
 
 
 # Will be CSRF protected when logged in
@@ -65,8 +85,7 @@ class logout_view(APIView):
         except:
             return Response({"error": "Something went wrong when trying to log out."})
 
-# @method_decorator(csrf_protect, name="dispatch")
-@method_decorator(csrf_protect, name="dispatch")
+@method_decorator(csrf_protect, name='dispatch')
 class register(APIView):
     permission_classes = (permissions.AllowAny, )
     def post(self, request, format=None):
