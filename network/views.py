@@ -60,21 +60,25 @@ class GetSessionUser(APIView):
     permission_classes = (permissions.AllowAny, )
 
     def get(self, request, format=None):
+        
+        user = self.request.user
         try:
-            user = self.request.user
+            
+            likes = Likes.objects.filter(liker=user).all().values_list('post', flat=True).order_by('post')
+            likes = list(likes)
+            print(likes)
 
-            userObject = {
+            json_data = {
                 'id': user.id,
                 'username': user.username,
-                'email' : user.email
+                'email' : user.email,
+                'likes' : likes
             }
 
-            return JsonResponse(userObject, content_type='application/json; charset=UTF-8', safe=False)
+            return JsonResponse(json_data, content_type='application/json; charset=UTF-8', safe=False)
         except:
-            return Response({"error": "Error retrieving current user info."})
+            return Response({"error": "Error retrieving user data."})
         
-
-
 
 # Will be CSRF protected when logged in
 class logout_view(APIView):
@@ -84,6 +88,7 @@ class logout_view(APIView):
             return Response({"success": "User successfully logged out."})
         except:
             return Response({"error": "Something went wrong when trying to log out."})
+
 
 @method_decorator(csrf_protect, name='dispatch')
 class register(APIView):
