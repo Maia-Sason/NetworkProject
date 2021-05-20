@@ -1,13 +1,14 @@
 
 from django.urls import path
 
-from .views import CheckAuthenticatedView, login_view, logout_view, register, GetCSRFToken, GetLatestPosts, ComposePost, Like, GetUserProfile, FollowUser, GetFollowingPosts
+from .views import CheckAuthenticatedView, login_view, logout_view, register, GetSessionUser, GetCSRFToken, GetLatestPosts, ComposePost, Like, GetUserProfile, FollowUser, GetFollowingPosts
 
 urlpatterns = [
     path('authenticated', CheckAuthenticatedView.as_view()),
     path('register', register.as_view()),
     path('login', login_view.as_view()),
     path('logout', logout_view.as_view()),
+    path('user', GetSessionUser.as_view()),
     path('csrf_cookie', GetCSRFToken.as_view()),
     path('create', ComposePost.as_view()),
     path('create/<int:id>', ComposePost.as_view()),

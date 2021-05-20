@@ -47,7 +47,7 @@ class login_view(APIView):
             # Check if authentication successful
             if user is not None:
                 login(request, user)
-                return Response({ 'success': 'User logged in', 'username': username})
+                return Response({ 'success': 'User logged in'})
             else:
                 return Response({
                     "error": "Invalid username and/or password."
@@ -55,6 +55,30 @@ class login_view(APIView):
         except:
             Response({'error': 'Problem occured while logging in.'})
 
+
+class GetSessionUser(APIView):
+    permission_classes = (permissions.AllowAny, )
+
+    def get(self, request, format=None):
+        
+        user = self.request.user
+        try:
+            
+            likes = Likes.objects.filter(liker=user).all().values_list('post', flat=True).order_by('post')
+            likes = list(likes)
+            print(likes)
+
+            json_data = {
+                'id': user.id,
+                'username': user.username,
+                'email' : user.email,
+                'likes' : likes
+            }
+
+            return JsonResponse(json_data, content_type='application/json; charset=UTF-8', safe=False)
+        except:
+            return Response({"error": "Error retrieving user data."})
+        
 
 # Will be CSRF protected when logged in
 class logout_view(APIView):
@@ -65,8 +89,8 @@ class logout_view(APIView):
         except:
             return Response({"error": "Something went wrong when trying to log out."})
 
-# @method_decorator(csrf_protect, name="dispatch")
-@method_decorator(csrf_protect, name="dispatch")
+
+@method_decorator(csrf_protect, name='dispatch')
 class register(APIView):
     permission_classes = (permissions.AllowAny, )
     def post(self, request, format=None):
@@ -204,11 +228,11 @@ class Like(APIView):
                 # Create a new entry to like a post
                 liked = Likes(liker=request.user, post=post)
                 liked.save()
-                return Response({"success": "Post liked!"})
+                return Response({"isLiked": "liked"})
             else:
                 # Delete the post.
                 like_entry.delete()
-                return Response({"success": "Post unliked!"})
+                return Response({"isLiked": "unliked"})
         except:
             return Response({"error": "Error occured performing like operation."})
         

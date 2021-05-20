@@ -8,7 +8,7 @@ class User(AbstractUser):
             "id": self.id,
             "username": self.username,
             "followers": self.followers.count(),
-            "following": self.following.count(),
+            "following": self.following.count()
         }
 
 class Posts(models.Model):
@@ -33,7 +33,7 @@ class Likes(models.Model):
         return {
             "id" : self.id,
             "post" : self.post,
-            "liker" : self.liker 
+            "liker" : self.liker
         }
 
 class Follow(models.Model):
