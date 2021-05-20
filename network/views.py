@@ -228,11 +228,11 @@ class Like(APIView):
                 # Create a new entry to like a post
                 liked = Likes(liker=request.user, post=post)
                 liked.save()
-                return Response({"success": "Post liked!"})
+                return Response({"isLiked": "liked"})
             else:
                 # Delete the post.
                 like_entry.delete()
-                return Response({"success": "Post unliked!"})
+                return Response({"isLiked": "unliked"})
         except:
             return Response({"error": "Error occured performing like operation."})
         
