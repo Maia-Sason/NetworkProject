@@ -170,7 +170,11 @@ class ComposePost(APIView):
             try:
                 post = Posts(creator=request.user, content=content)
                 post.save()
-                return Response({"success": "Posted!"})
+
+                data = post.serialize()
+                print(data)
+                
+                return JsonResponse(data, content_type='application/json; charset=UTF-8', safe=False)
             except:
                 return Response({"error": "Error occured trying to save post!"})
         except: 
