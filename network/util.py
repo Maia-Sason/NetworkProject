@@ -24,7 +24,8 @@ def PaginationPosts(data, data_id=None):
         "previous": p.page(data_id).has_previous(),
         "next": p.page(data_id).has_next(),
         "page": data_id,
-        "posts": p.page(data_id).object_list
+        "posts": p.page(data_id).object_list,
+        "max": p.num_pages
     }
 
     return json_page_data

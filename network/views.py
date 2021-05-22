@@ -331,9 +331,10 @@ class GetUserProfile(APIView):
 
     def get(self, request, format=None, *args, **kwargs):
         data_id = self.kwargs.get('id')
+        print(data_id)
         page_id = self.kwargs.get('page')
         try:
-            profile = User.objects.filter(id=data_id).first()
+            profile = User.objects.filter(username=data_id).first()
             profile_json = {}
             profile_json = profile.serialize()
         except:
