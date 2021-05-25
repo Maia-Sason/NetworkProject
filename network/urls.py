@@ -15,7 +15,7 @@ urlpatterns = [
     path('posts', GetLatestPosts.as_view()),
     path('posts/<int:id>', GetLatestPosts.as_view()),
     path('like/<int:id>', Like.as_view()),
-    path('profile/<int:id>', GetUserProfile.as_view()),
+    path('profile/<str:id>', GetUserProfile.as_view()),
     path('profile/<str:id>/<int:page>', GetUserProfile.as_view()),
     path('follow/<int:id>', FollowUser.as_view()),
     path('following', GetFollowingPosts.as_view()),

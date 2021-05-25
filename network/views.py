@@ -66,13 +66,17 @@ class GetSessionUser(APIView):
             
             likes = Likes.objects.filter(liker=user).all().values_list('post', flat=True).order_by('post')
             likes = list(likes)
-            print(likes)
+            follows = list(Follow.objects.filter(followerUser=user).all().values_list('targetUser', flat=True))
+
+            print(follows)
 
             json_data = {
                 'id': user.id,
                 'username': user.username,
                 'email' : user.email,
-                'likes' : likes
+                'likes' : likes,
+                'follows': follows
+                # 'follows' : list(user.following.all().values_list('target', flat=True))
             }
 
             return JsonResponse(json_data, content_type='application/json; charset=UTF-8', safe=False)
@@ -272,14 +276,20 @@ class GetFollowingPosts(APIView):
     def get(self, request, format=None, *args, **kwargs):
         """ filter by user == user follow."""
         page_id = self.kwargs.get('page')
+
+        session_user = self.request.user
         
-        following = Follow.objects.filter(followerUser=request.user).all()
-        
+        following = list(session_user.following.all().values_list('targetUser', flat=True))
+        print(following)
+
         users_following = []
         try:
             for user_following in following:
-                user = User.objects.get(id=user_following.id)
+                user = User.objects.get(id=user_following)
                 users_following.append(user)
+                
+
+            print(users_following)
 
             posts = Posts.objects.filter(creator__in=users_following)
             posts = posts.order_by("-timestamp")
@@ -314,11 +324,11 @@ class FollowUser(APIView):
                 # Create a new entry to like a post
                 following = Follow(followerUser=request.user, targetUser=target)
                 following.save()
-                return Response({"success": "User followed!"})
+                return Response({"follow": "follow"})
             else:
                 # Delete the post.
                 following.delete()
-                return Response({"success": "User unfollowed!"})
+                return Response({"follow": "unfollow"})
         except:
             return Response({"error": "Error occured performing like operation."})
 
