@@ -21,4 +21,4 @@ https://social-network-post.herokuapp.com/
 * React
 * React-Redux
 * Redux-Thunk
-
+* Axios
