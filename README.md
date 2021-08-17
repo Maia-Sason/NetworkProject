@@ -14,6 +14,7 @@ https://social-network-post.herokuapp.com/
 * Django-Channels - (to serve real time notifications through websockets)
 * Signals - (on save to db, will emit event to Django-Channels which then sends notification to user)
 * Django REST framework - (to work on REST API for serving requests to client)
+* PostgreSQL database
 
 #### Front end:
 
